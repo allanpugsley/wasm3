@@ -20,6 +20,12 @@ enum
     c_waOp_loop                 = 0x03,
     c_waOp_if                   = 0x04,
     c_waOp_else                 = 0x05,
+    // 0x06 to 0x09: exception handling additions
+    c_waOp_try                  = 0x06,
+    c_waOp_catch                = 0x07,
+    c_waOp_throw                = 0x08,
+    c_waOp_rethrow              = 0x09,
+    //
     c_waOp_end                  = 0x0b,
     c_waOp_branch               = 0x0c,
     c_waOp_branchTable          = 0x0e,

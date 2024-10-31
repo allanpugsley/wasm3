@@ -7,6 +7,14 @@
 
 #include "m3_function.h"
 #include "m3_env.h"
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#if TARGET_OS_IPHONE
+#include "ios_error.h"
+#undef stdout
+#define stdout thread_stdout
+#endif
+#endif
 
 
 M3Result AllocFuncType (IM3FuncType * o_functionType, u32 i_numTypes)

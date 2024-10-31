@@ -900,6 +900,18 @@ d_m3Op  (Branch)
     jumpOp (* _pc);
 }
 
+d_m3Op  (Try)
+{
+	// Empty for now. (TODO)
+    nextOp();
+}
+
+d_m3Op  (CatchAll)
+{
+    // Empty for now. (TODO)
+    nextOp();
+}
+
 
 d_m3Op  (If_r)
 {

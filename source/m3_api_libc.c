@@ -16,6 +16,15 @@
 #include <errno.h>
 #include <stdio.h>
 
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#if TARGET_OS_IPHONE
+#include "ios_error.h"
+#undef stdout
+#define stdout thread_stdout
+#endif
+#endif
+
 typedef uint32_t wasm_ptr_t;
 typedef uint32_t wasm_size_t;
 
@@ -196,8 +205,10 @@ M3Result  SuppressLookupFailure (M3Result i_result)
 {
     if (i_result == m3Err_functionLookupFailed)
         return m3Err_none;
-    else
+    else {
+        printf("Failure loading function: %s\n", i_result);
         return i_result;
+    }
 }
 
 m3ApiRawFunction(m3_spectest_dummy)

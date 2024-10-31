@@ -1848,6 +1848,34 @@ _           (FindReferencedLocalWithinCurrentBlock (o, & preservedSlotNumber, sl
 }
 
 static
+M3Result  Compile_Try  (IM3Compilation o, m3opcode_t i_opcode)
+{
+    // https://github.com/WebAssembly/exception-handling/blob/main/proposals/exception-handling/legacy/Exceptions.md#try-catch-blocks
+    /*      [   op_Try  ]
+            [ blocktype ]
+            [ ..code..  ]
+            [ catch i   ]
+            [ ..code..  ]
+            [ catch j   ]
+            [ ..code..  ]
+            [ catch all ]
+            [    end    ]         */
+
+_try {
+    _   (PreserveRegisters (o));
+    _   (PreserveArgsAndLocals (o));
+
+    // get blocktype
+        IM3FuncType blockType;
+    _   (ReadBlockType (o, & blockType));
+
+    // get block:
+    _   (CompileBlock (o, blockType, i_opcode));
+
+    } _catch: return result;
+}
+
+static
 M3Result  Compile_LoopOrBlock  (IM3Compilation o, m3opcode_t i_opcode)
 {
     M3Result result;
@@ -2067,6 +2095,26 @@ M3Result  Compile_Drop  (IM3Compilation o, m3opcode_t i_opcode)
 }
 
 static
+M3Result  Compile_Catch  (IM3Compilation o, m3opcode_t i_opcode)
+{
+    // This is where it fails: we get o->stackIndex == o->dynamicStackIndex
+    _try {
+        u32 label;
+        _   (ReadLEB_u32 (& label, & o->wasm, o->wasmEnd));                 m3log (compile, d_indent " (label = %d)", get_indention_string (o), label);
+    } _catch: return result;
+}
+
+static
+M3Result  Compile_Rethrow  (IM3Compilation o, m3opcode_t i_opcode)
+{
+    _try {
+        u32 depth;
+        _   (ReadLEB_u32 (& depth, & o->wasm, o->wasmEnd));                m3log (compile, d_indent " (depth = %d)", get_indention_string (o), depth);
+    } _catch: return result;
+}
+
+
+static
 M3Result  Compile_Nop  (IM3Compilation o, m3opcode_t i_opcode)
 {
     return m3Err_none;
@@ -2265,8 +2313,13 @@ const M3OpInfo c_operations [] =
     M3OP( "loop",                0, none,   d_logOp (Loop),                     Compile_LoopOrBlock ),  // 0x03
     M3OP( "if",                 -1, none,   d_emptyOpList,                      Compile_If ),           // 0x04
     M3OP( "else",                0, none,   d_emptyOpList,                      Compile_Nop ),          // 0x05
+    // Exception handling additions (TODO):
+    M3OP( "try",                 0, none,   d_emptyOpList,                      Compile_Try ),          // 0x06
+    M3OP( "catch",               0, none,   d_emptyOpList,                      Compile_Catch ),          // 0x07
+    M3OP( "throw",               0, none,   d_emptyOpList,                      Compile_Nop ),          // 0x08
+    M3OP( "rethrow",             0, none,   d_emptyOpList,                      Compile_Rethrow ),      // 0x09
 
-    M3OP_RESERVED, M3OP_RESERVED, M3OP_RESERVED, M3OP_RESERVED, M3OP_RESERVED,                          // 0x06...0x0a
+    M3OP_RESERVED,                          // 0x0a
 
     M3OP( "end",                 0, none,   d_emptyOpList,                      Compile_End ),          // 0x0b
     M3OP( "br",                  0, none,   d_logOp (Branch),                   Compile_Branch ),       // 0x0c
@@ -2279,8 +2332,10 @@ const M3OpInfo c_operations [] =
     M3OP( "return_call_indirect",0, any,    d_emptyOpList,                      Compile_CallIndirect ), // 0x13
 
     M3OP_RESERVED,  M3OP_RESERVED,                                                                      // 0x14...
-    M3OP_RESERVED,  M3OP_RESERVED, M3OP_RESERVED, M3OP_RESERVED,                                        // ...0x19
+    M3OP_RESERVED,  M3OP_RESERVED,                                                                      // ...0x17
 
+    M3OP( "delegate",            0, none,   d_emptyOpList,                      Compile_Nop ),          // 0x18
+    M3OP( "catch_all",           0, none,   d_emptyOpList,                      Compile_Nop ),          // 0x19
     M3OP( "drop",               -1, none,   d_emptyOpList,                      Compile_Drop ),         // 0x1a
     M3OP( "select",             -2, any,    d_emptyOpList,                      Compile_Select  ),      // 0x1b
 

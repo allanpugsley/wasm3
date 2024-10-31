@@ -17,7 +17,7 @@
 # endif
 
 # ifndef d_m3MaxFunctionStackHeight
-#   define d_m3MaxFunctionStackHeight           2000    // max: 32768
+#   define d_m3MaxFunctionStackHeight           20000    // max: 32768, initial: 2000 (not enough for tree)
 # endif
 
 # ifndef d_m3MaxLinearMemoryPages

@@ -448,6 +448,47 @@ _       (ReadLEB_u32 (& segment->size, & i_bytes, i_end));
 }
 
 
+M3Result  ParseSection_Tag  (M3Module * io_module, bytes_t i_bytes, cbytes_t i_end)
+{
+    M3Result result = m3Err_none;
+
+    u32 numTags;
+_   (ReadLEB_u32 (& numTags, & i_bytes, i_end));                            m3log (parse, "** Tags [%d]", numTags);
+
+    _throwif("too many tags", numTags > d_m3MaxSaneTags);
+
+    io_module->tags = m3_AllocArray (M3Tag, numTags);
+    _throwifnull(io_module->tags);
+    io_module->numTags = numTags;
+
+    for (u32 i = 0; i < numTags; ++i)
+    {
+        M3Tag * tag = & io_module->tags [i];
+
+        /* get the one byte attribute */
+_       (Read_u8 (& (tag->attribute), & i_bytes, i_end));
+
+        /* get type */
+        _   (ReadLEB_u32 (& (tag->type), & i_bytes, i_end));
+
+        /* compare against module->numFuncTypes */
+        _throwif("unknown type", tag->type >= io_module->numFuncTypes);
+
+        /* get return type (must be 0) */
+        /* check, that the type of the referred tag returns void */
+        tag->funcType = (IM3FuncType) io_module->funcTypes [tag->type];
+        _throwif("non-empty tag result type", tag->funcType->numRets > 0);
+
+        _throwif("tag underflow", i_bytes > i_end);                         m3log (parse, "    tag [%u]  type: %u;  func-type: %s",
+                                                                                   i, tag->type, SPrintFuncTypeSignature (tag->funcType));
+    }
+
+    _catch:
+
+    return result;
+}
+
+
 M3Result  ParseSection_Memory  (M3Module * io_module, bytes_t i_bytes, cbytes_t i_end)
 {
     M3Result result = m3Err_none;
@@ -588,11 +629,12 @@ M3Result  ParseModuleSection  (M3Module * o_module, u8 i_sectionType, bytes_t i_
         ParseSection_Code,      // 10
         ParseSection_Data,      // 11
         NULL,                   // 12: TODO DataCount
+        ParseSection_Tag,       // 13: (in progress) Tag declarations
     };
 
     M3Parser parser = NULL;
 
-    if (i_sectionType <= 12)
+    if (i_sectionType <= 13)
         parser = s_parsers [i_sectionType];
 
     if (parser)
@@ -633,7 +675,8 @@ _   (Read_u32 (& version, & pos, end));
     _throwif (m3Err_wasmMalformed, magic != 0x6d736100);
     _throwif (m3Err_incompatibleWasmVersion, version != 1);
 
-    static const u8 sectionsOrder[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 10, 11, 0 }; // 0 is a placeholder
+    // See https://github.com/WebAssembly/exception-handling/blob/main/proposals/exception-handling/Exceptions.md
+    static const u8 sectionsOrder[] = { 1, 2, 3, 4, 5, 13, 6, 7, 8, 9, 12, 10, 11, 0 }; // 0 is a placeholder
     u8 expectedSection = 0;
 
     while (pos < end)
@@ -642,9 +685,11 @@ _   (Read_u32 (& version, & pos, end));
 _       (ReadLEB_u7 (& section, & pos, end));
 
         if (section != 0) {
+            // Let's print a useful error message (comment this line when debugging):
+            _throwif("wasm3 does not handle exceptions or setjmp/longjmp (yet).", section == 13);
             // Ensure sections appear only once and in order
             while (sectionsOrder[expectedSection++] != section) {
-                _throwif(m3Err_misorderedWasmSection, expectedSection >= 12);
+                _throwif(m3Err_misorderedWasmSection, expectedSection >= 13);
             }
         }
 

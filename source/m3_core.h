@@ -172,6 +172,7 @@ M3CodePageHeader;
 #define d_m3MaxSaneTableSize                10000000
 #define d_m3MaxSaneUtf8Length               10000
 #define d_m3MaxSaneFunctionArgRetCount      1000    // still insane, but whatever
+#define d_m3MaxSaneTags                     1000    // still insane, but whatever
 
 #define d_externalKind_function             0
 #define d_externalKind_table                1

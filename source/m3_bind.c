@@ -8,7 +8,14 @@
 #include "m3_env.h"
 #include "m3_exception.h"
 #include "m3_info.h"
-
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#if TARGET_OS_IPHONE
+#include "ios_error.h"
+#undef stdout
+#define stdout thread_stdout
+#endif
+#endif
 
 u8  ConvertTypeCharToTypeId (char i_code)
 {
@@ -151,6 +158,9 @@ _               (CompileRawFunction (io_module, f, i_function, i_userdata));
         }
     }
 } _catch:
+    if ((result != NULL) && (result != m3Err_functionLookupFailed)) {
+        fprintf(thread_stderr, "Failure loading function: %s for module %s: %s\n", i_functionName,i_moduleName, result);
+    }
     return result;
 }
 

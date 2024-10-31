@@ -54,6 +54,16 @@ M3DataSegment;
 
 //---------------------------------------------------------------------------------------------------------------------------------
 
+typedef struct M3Tag
+{
+    u8                      attribute;
+    u32                     type;
+    M3FuncType *            funcType;
+}
+M3Tag;
+
+//---------------------------------------------------------------------------------------------------------------------------------
+
 typedef struct M3Global
 {
     M3ImportInfo            import;
@@ -120,6 +130,9 @@ typedef struct M3Module
     const char*             memoryExportName;
 
     //bool                    hasWasmCodeCopy;
+    
+    u32                     numTags;
+    M3Tag *                 tags;
 
     struct M3Module *       next;
 }
